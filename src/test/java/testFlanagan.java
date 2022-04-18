@@ -1,3 +1,4 @@
+import flanagan.interpolation.CubicSpline;
 import flanagan.interpolation.TriCubicSpline;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,10 +45,21 @@ public class testFlanagan {
 
         System.out.println(interpolateDistance);
         assertEquals(interpolateDistance, 6942, 1);
+
+        interpolateDistance = triCubicSpline.interpolate(40.0, 20.0, 250.0);
+        System.out.println(interpolateDistance);
     }
 
     @Test
     void testExtrapolation() {
-        double extrapolateDistance = triCubicSpline.interpolate(40.0, 20.0, 250.0);
+        double[] excelData = { 50.0, 100.0, 200.0, 500.0 };
+        double[] distances = { 5700.0, 7075.0, 7225.0, 7425.0};
+        CubicSpline cubicSpline = new CubicSpline(excelData, distances);
+
+        for (int i = 10; i < 700; i += 10)
+        {
+            double interpolateDistance = cubicSpline.interpolate(i);
+            System.out.println(interpolateDistance);
+        }
     }
 }

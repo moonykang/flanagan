@@ -50,6 +50,9 @@ package flanagan.interpolation;
 import flanagan.math.Fmath;
 import flanagan.math.Conv;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class CubicSpline {
 
     private int nPoints = 0;                                    // no. of tabulated points
@@ -475,17 +478,23 @@ public class CubicSpline {
         // Check for violation of interpolation bounds
         if (xx < this.x[0]) {
             // if violation is less than potntial rounding error - amend to lie with bounds
-            if (CubicSpline.roundingCheck && Math.abs(x[0] - xx) <= Math.pow(10, Math.floor(Math.log10(Math.abs(this.x[0])))) * CubicSpline.potentialRoundingError) {
+            if (CubicSpline.roundingCheck && Math.abs(x[0] - xx)
+                    <= Math.pow(10, Math.floor(Math.log10(Math.abs(this.x[0]))))
+                    * CubicSpline.potentialRoundingError) {
                 xx = x[0];
             } else {
-                throw new IllegalArgumentException("x (" + xx + ") is outside the range of data points (" + x[0] + " to " + x[this.nPoints - 1] + ")");
+                return negativeExtrapolate(xx);
+                //throw new IllegalArgumentException("x (" + xx + ") is outside the range of data points (" + x[0] + " to " + x[this.nPoints - 1] + ")");
             }
         }
         if (xx > this.x[this.nPoints - 1]) {
-            if (CubicSpline.roundingCheck && Math.abs(xx - this.x[this.nPoints - 1]) <= Math.pow(10, Math.floor(Math.log10(Math.abs(this.x[this.nPoints - 1])))) * CubicSpline.potentialRoundingError) {
+            if (CubicSpline.roundingCheck && Math.abs(xx - this.x[this.nPoints - 1])
+                    <= Math.pow(10, Math.floor(Math.log10(Math.abs(this.x[this.nPoints - 1]))))
+                    * CubicSpline.potentialRoundingError) {
                 xx = this.x[this.nPoints - 1];
             } else {
-                throw new IllegalArgumentException("x (" + xx + ") is outside the range of data points (" + x[0] + " to " + x[this.nPoints - 1] + ")");
+                return positiveExtrapolate(xx);
+                //throw new IllegalArgumentException("x (" + xx + ") is outside the range of data points (" + x[0] + " to " + x[this.nPoints - 1] + ")");
             }
         }
 
@@ -514,6 +523,51 @@ public class CubicSpline {
         return this.yy;
     }
 
+    private final int iNum = 10;
+    private double positiveExtrapolate(double xx) {
+        double xfar = xx - x[this.nPoints - 1] > x[this.nPoints - 1] - x[0] ? x[this.nPoints - 1] * 2 - x[0] : xx;
+        double xrfar = x[this.nPoints - 1] - (xfar - x[this.nPoints - 1]);
+        double xGap = (x[this.nPoints - 1] - xrfar) / iNum;
+
+        double ixMin = interpolate(xrfar);
+        double ldydx = 0;
+        double cdydx = 0;
+        double sddydx = 0;
+        for (int i = 1; i < iNum; i++) {
+            double interpolatedValue = interpolate(xrfar + xGap * i);
+            cdydx = (interpolatedValue - ixMin) / (xGap * i);
+            if (ldydx != 0)
+                sddydx += cdydx - ldydx;
+            ldydx = cdydx;
+        }
+
+        double mddydx = sddydx / (iNum - 1);
+        double tdydx = cdydx + mddydx * ((xx - xrfar) / (x[this.nPoints - 1] - xrfar));
+
+        return ixMin + tdydx * (xx - xrfar);
+    }
+
+    private double negativeExtrapolate(double xx) {
+        double xfar = x[0] - xx > x[this.nPoints - 1] - x[0] ? x[0] * 2 - x[this.nPoints - 1] : xx;
+        double xrfar = x[0] * 2 - xfar;
+        double xGap = (xrfar - x[0]) / iNum;
+
+        double ixMin = interpolate(xrfar);
+        double ldydx = 0;
+        double cdydx = 0;
+        double sddydx = 0;
+        for (int i = 1; i < iNum; i++) {
+            double interpolatedValue = interpolate(xrfar - xGap * i);
+            cdydx = (interpolatedValue - ixMin) / (xGap * i);
+            sddydx = cdydx - ldydx;
+            ldydx = cdydx;
+        }
+
+        double mddydx = sddydx / iNum;
+        double tdydx = cdydx + mddydx * ((xx - xrfar) / (x[this.nPoints - 1] - xrfar));
+
+        return ixMin + tdydx * (xrfar - xx);
+    }
 
     //  Returns an interpolated value of y  and of the first derivative dy/dx for a value of x from a tabulated function y=f(x)
     //  after the data has been entered via a constructor.

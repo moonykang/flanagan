@@ -56,10 +56,10 @@ public class testFlanagan {
         double[] distances = { 5700.0, 7075.0, 7225.0, 7425.0};
         CubicSpline cubicSpline = new CubicSpline(excelData, distances);
 
-        for (int i = 10; i < 700; i += 10)
+        for (int i = 10; i < 1000; i += 10)
         {
             double interpolateDistance = cubicSpline.interpolate(i);
-            System.out.println(interpolateDistance);
+            System.out.println(i + " " + interpolateDistance);
         }
     }
 }

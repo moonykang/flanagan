@@ -525,16 +525,15 @@ public class CubicSpline {
 
     private final int iNum = 10;
     private double positiveExtrapolate(double xx) {
-        double xfar = xx - x[this.nPoints - 1] > x[this.nPoints - 1] - x[0] ? x[this.nPoints - 1] * 2 - x[0] : xx;
-        double xrfar = x[this.nPoints - 1] - (xfar - x[this.nPoints - 1]);
-        double xGap = (x[this.nPoints - 1] - xrfar) / iNum;
+        double xMid = (x[this.nPoints - 1] - x[0]) / 2;
+        double xGap = (x[this.nPoints - 1] - xMid) / iNum;
 
-        double ixMin = interpolate(xrfar);
+        double ixMin = interpolate(xMid);
         double ldydx = 0;
         double cdydx = 0;
         double sddydx = 0;
         for (int i = 1; i < iNum; i++) {
-            double interpolatedValue = interpolate(xrfar + xGap * i);
+            double interpolatedValue = interpolate(xMid + xGap * i);
             cdydx = (interpolatedValue - ixMin) / (xGap * i);
             if (ldydx != 0)
                 sddydx += cdydx - ldydx;
@@ -542,31 +541,30 @@ public class CubicSpline {
         }
 
         double mddydx = sddydx / (iNum - 1);
-        double tdydx = cdydx + mddydx * ((xx - xrfar) / (x[this.nPoints - 1] - xrfar));
+        double tdydx = cdydx + mddydx * ((xx - xMid) / (x[this.nPoints - 1] - xMid));
 
-        return ixMin + tdydx * (xx - xrfar);
+        return ixMin + tdydx * (xx - xMid);
     }
 
     private double negativeExtrapolate(double xx) {
-        double xfar = x[0] - xx > x[this.nPoints - 1] - x[0] ? x[0] * 2 - x[this.nPoints - 1] : xx;
-        double xrfar = x[0] * 2 - xfar;
-        double xGap = (xrfar - x[0]) / iNum;
+        double xMid = (x[this.nPoints - 1] - x[0]) / 2;
+        double xGap = (xMid - x[0]) / iNum;
 
-        double ixMin = interpolate(xrfar);
+        double ixMin = interpolate(xMid);
         double ldydx = 0;
         double cdydx = 0;
         double sddydx = 0;
         for (int i = 1; i < iNum; i++) {
-            double interpolatedValue = interpolate(xrfar - xGap * i);
+            double interpolatedValue = interpolate(xMid - xGap * i);
             cdydx = (interpolatedValue - ixMin) / (xGap * i);
             sddydx = cdydx - ldydx;
             ldydx = cdydx;
         }
 
         double mddydx = sddydx / iNum;
-        double tdydx = cdydx + mddydx * ((xx - xrfar) / (x[this.nPoints - 1] - xrfar));
+        double tdydx = cdydx + mddydx * ((xx - xMid) / (x[this.nPoints - 1] - xMid));
 
-        return ixMin + tdydx * (xrfar - xx);
+        return ixMin + tdydx * (xMid - xx);
     }
 
     //  Returns an interpolated value of y  and of the first derivative dy/dx for a value of x from a tabulated function y=f(x)

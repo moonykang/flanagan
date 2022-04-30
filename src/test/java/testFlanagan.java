@@ -46,7 +46,7 @@ public class testFlanagan {
         System.out.println(interpolateDistance);
         assertEquals(interpolateDistance, 6942, 1);
 
-        interpolateDistance = triCubicSpline.interpolate(40.0, 20.0, 250.0);
+        interpolateDistance = triCubicSpline.interpolate(10, 5, 180);
         System.out.println(interpolateDistance);
     }
 

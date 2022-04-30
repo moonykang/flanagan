@@ -77,7 +77,6 @@ public class CubicSpline {
     private static double potentialRoundingError = 5e-15;       // potential rounding error used in checking wheter a value lies within the interpolation bounds
     private static boolean roundingCheck = true;                // = true: points outside the interpolation bounds by less than the potential rounding error rounded to the bounds limit
 
-
     // Constructors
     // Constructor with data arrays initialised to arrays x and y
     public CubicSpline(double[] x, double[] y) {
@@ -96,7 +95,6 @@ public class CubicSpline {
         this.orderPoints();
         this.checkForIdenticalPoints();
         this.calcDeriv();
-
     }
 
     // Constructor with data arrays initialised to zero
@@ -471,10 +469,10 @@ public class CubicSpline {
     //  The derivatives are calculated, bt calcDeriv(), on the first call to this method ands are
     //  then stored for use on all subsequent calls
     public double interpolate(double xx) {
-
         // Check for violation of interpolation bounds
         if (xx < this.x[0]) {
             // if violation is less than potntial rounding error - amend to lie with bounds
+            //System.out.println(Math.log10(Math.abs(this.x[0])));
             if (CubicSpline.roundingCheck && Math.abs(x[0] - xx)
                     <= Math.pow(10, Math.floor(Math.log10(Math.abs(this.x[0]))))
                     * CubicSpline.potentialRoundingError) {
@@ -522,46 +520,43 @@ public class CubicSpline {
 
     private final int iNum = 20;
     private double positiveExtrapolate(double xx) {
-        double xin = Math.max((x[this.nPoints - 1] - x[0]) / 2, x[this.nPoints - 1] - xx);
+        double xMid = (x[this.nPoints - 1] + x[0]) / 2;
+        double xDis = xx - x[this.nPoints - 1];
+        double xin = Math.max(xMid, x[this.nPoints - 1] - xDis);
         double xGap = (x[this.nPoints - 1] - xin) / iNum;
 
         double ixMin = interpolate(xin);
-        double ldydx = 0;
-        double cdydx = 0;
         double sddydx = 0;
+        double weight_sum = (iNum + 1) * (iNum - 1) / 2;
+
         for (int i = 1; i < iNum; i++) {
             double interpolatedValue = interpolate(xin + xGap * i);
-            cdydx = (interpolatedValue - ixMin) / (xGap * i);
-            if (ldydx != 0)
-                sddydx += cdydx - ldydx;
-            ldydx = cdydx;
+            sddydx += (interpolatedValue - ixMin) / xGap;
         }
 
-        double mddydx = sddydx / (iNum - 1);
-        double tdydx = cdydx + mddydx * ((xx - xin) / (x[this.nPoints - 1] - xin));
-
-        return ixMin + tdydx * (xx - xin);
+        double mddydx = sddydx / weight_sum;
+        double xdiff = xx - xin;
+        return ixMin + xdiff * mddydx;
     }
 
     private double negativeExtrapolate(double xx) {
-        double xin = Math.min(x[0] + xx, (x[this.nPoints - 1] - x[0]) / 2);
+        double xMid = (x[this.nPoints - 1] + x[0]) / 2;
+        double xDis = x[0] - xx;
+        double xin = Math.min(x[0] + xDis, xMid);
         double xGap = (xin - x[0]) / iNum;
 
         double ixMin = interpolate(xin);
-        double ldydx = 0;
-        double cdydx = 0;
         double sddydx = 0;
+        double weight_sum = (iNum + 1) * (iNum - 1) / 2;
+
         for (int i = 1; i < iNum; i++) {
             double interpolatedValue = interpolate(xin - xGap * i);
-            cdydx = (interpolatedValue - ixMin) / (xGap * i);
-            sddydx = cdydx - ldydx;
-            ldydx = cdydx;
+            sddydx += (interpolatedValue - ixMin) / xGap;
         }
 
-        double mddydx = sddydx / iNum;
-        double tdydx = cdydx + mddydx * ((xx - xin) / (x[this.nPoints - 1] - xin));
-
-        return ixMin + tdydx * (xin - xx);
+        double mddydx = sddydx / weight_sum;
+        double xdiff = xin - xx;
+        return ixMin + xdiff * mddydx;
     }
 
     //  Returns an interpolated value of y  and of the first derivative dy/dx for a value of x from a tabulated function y=f(x)
